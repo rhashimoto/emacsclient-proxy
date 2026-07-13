@@ -12,17 +12,13 @@ This repository contains:
 * **`emacsclient-proxy.el`**: A lightweight TCP server running inside your host Emacs.
 * **`emacsclient-proxy.py`**: A client Python script to be placed in untrusted environments and set as your `EDITOR` variable.
 
----
-
 ## How it works
 
-Instead of exposing the Emacs server port, this proxy acts as a secure, single-purpose firewall:
+Instead of exposing the Emacs server port, this proxy acts as a secure single-purpose firewall:
 
-1. **Custom Server (`emacsclient-proxy.el`)**: Runs on the host and exposes a minimal TCP port. Unlike the standard Emacs server, it **does not** understand or allow Lisp evaluation.
+1. **Custom Server (`emacsclient-proxy.el`)**: Runs on the host and exposes a minimal TCP port. Unlike the standard Emacs server, it does not understand or allow Lisp evaluation.
 2. **Strict Protocol**: It only accepts a single line of text representing the absolute path of the file to open. 
 3. **Double-Dash Protection**: The server invokes the host's real `emacsclient` by prepending `--` to the argument (e.g., `emacsclient -- <file>`). This forces Emacs to treat the input strictly as a file path, rendering option injection (such as passing `-e` or `--eval`) entirely impossible.
-
----
 
 ## Setup
 
@@ -35,6 +31,7 @@ Place `emacsclient-proxy.el` in your Emacs load path and load it in your init fi
 (require 'emacsclient-proxy)
 
 ;; Start the secure server on a port of your choice (default is localhost:3649)
+(server-start)
 (emacsclient-proxy-start "localhost:3649")
 ```
 
@@ -42,11 +39,9 @@ You can customize the binding address when starting:
 * `"localhost:3649"`: Listen on loopback only (safest for local use).
 * `"0.0.0.0:3649"`: Listen on all interfaces (useful if connecting from a remote VM or container gateway).
 
----
-
 ### 2. Sandbox Setup (The `EDITOR` Variable)
 
-Copy `emacsclient-proxy.py` into your container or sandbox context, ensure it is executable, and configure your shell to use it as the default editor, e.g. in `~/.bashrc`:
+Install python3 if missing. Copy `emacsclient-proxy.py` into your container or sandbox context, ensure it is executable, and configure your shell to use it as the default editor, e.g. in `~/.bashrc`:
 
 ```bash
 # Automatically detect the default routing gateway (useful in Docker/VMs)
