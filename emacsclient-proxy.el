@@ -71,20 +71,20 @@ and finally on the system PATH."
   "Start the TCP server listening on ADDRESS.
 ADDRESS is a string specifying the interface and port to listen on.
 Examples of ADDRESS:
-  \"192.168.2.1\"      - Listen on 192.168.2.1 and default port 4321.
+  \"192.168.2.1\"      - Listen on 192.168.2.1 and default port 3649.
   \"192.168.2.1:1234\" - Listen on 192.168.2.1 and explicit port 1234.
   \":1234\"            - Listen on loopback (127.0.0.1) and port 1234.
-  \"0.0.0.0\"          - Listen on all interfaces on default port 4321.
+  \"0.0.0.0\"          - Listen on all interfaces on default port 3649.
 
-When called interactively, default is \"localhost:4321\"."
+When called interactively, default is \"localhost:3649\"."
   (interactive
-   (list (let ((input (read-string "Listen address (default localhost:4321): " nil nil "localhost:4321")))
-           (if (string= input "") "localhost:4321" input))))
+   (list (let ((input (read-string "Listen address (default localhost:3649): " nil nil "localhost:3649")))
+           (if (string= input "") "localhost:3649" input))))
   (when (and emacsclient-proxy-process (process-status emacsclient-proxy-process))
     (error "Server is already running"))
-  (let* ((addr (or address "localhost:4321"))
+  (let* ((addr (or address "localhost:3649"))
          (host "127.0.0.1")
-         (port 4321))
+         (port 3649))
     ;; Parse host and port from the address string
     (if (string-match "\\(.*\\):\\([0-9]+\\)" addr)
         (let ((h (match-string 1 addr))

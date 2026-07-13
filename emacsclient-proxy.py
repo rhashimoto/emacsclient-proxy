@@ -7,8 +7,8 @@ import socket
 def main():
     # Use standard argparse now that -h is free for help
     parser = argparse.ArgumentParser(description="Emacsclient Proxy Script")
-    parser.add_argument("-a", dest="host_address", default="127.0.0.1:4321",
-                        help="Specify the host where emacs is running (format host:port or host, default port 4321).")
+    parser.add_argument("-a", dest="host_address", default="127.0.0.1:3649",
+                        help="Specify the host where emacs is running (format host:port or host, default port 3649).")
     parser.add_argument("-p", dest="prefix", default="",
                         help="Specify the prefix to prepend to the file path (default is empty string).")
     parser.add_argument("filepath", help="The path of the file to open.")
@@ -21,7 +21,7 @@ def main():
 
     # Parse host and port
     host = "127.0.0.1"
-    port = 4321
+    port = 3649
 
     if ":" in host_address:
         parts = host_address.rsplit(":", 1)
@@ -29,7 +29,7 @@ def main():
         try:
             port = int(parts[1])
         except ValueError:
-            port = 4321
+            port = 3649
     else:
         host = host_address
 
