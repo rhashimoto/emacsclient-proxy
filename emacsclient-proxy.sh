@@ -12,21 +12,33 @@
 # programs (BSD netcat, GNU netcat, busybox netcat on Alpine) that
 # disagree on flags and, more importantly, on half-close behavior after
 # stdin EOF. `socat` has one consistent implementation across Alpine,
-# Debian, and Fedora, and its default stdio<->TCP relay behavior already
-# matches what we need: forward stdin, half-close the write side on EOF,
-# keep reading the socket until the peer closes, then exit.
+# Debian, and Fedora. Getting it to actually block until the *server*
+# closes the connection needs two overrides beyond the defaults -- see
+# the comment above the socat invocation below for why.
 
 set -euo pipefail
 
 DEFAULT_HOST_ADDRESS="127.0.0.1:3649"
 DEFAULT_PORT=3649
+# How long socat should keep waiting for the *server* to close its side
+# once our side has finished sending. socat's own default for this is a
+# mere 0.5s (its -t option), which is nowhere near long enough here: our
+# payload is a single short line, so our sending side reaches EOF almost
+# instantly, but the server intentionally keeps the connection open for
+# as long as the user is editing the file -- anywhere from seconds to
+# hours. Without overriding -t, socat gives up and exits early, well
+# before the server actually closes the connection. A large-but-finite
+# value avoids that while still eventually giving up on a truly wedged
+# connection. Override with -w if a different bound is wanted.
+DEFAULT_WAIT_TIMEOUT=604800  # 1 week
 
 host_address="$DEFAULT_HOST_ADDRESS"
 prefix=""
+wait_timeout="$DEFAULT_WAIT_TIMEOUT"
 
 print_usage() {
     cat <<EOF
-usage: $(basename "$0") [-h] [-a HOST_ADDRESS] [-p PREFIX] filepath
+usage: $(basename "$0") [-h] [-a HOST_ADDRESS] [-p PREFIX] [-w SECONDS] filepath
 
 Emacsclient Proxy Script
 
@@ -39,6 +51,11 @@ options:
                       host:port or host, default port ${DEFAULT_PORT}).
   -p PREFIX          Specify the prefix to prepend to the file path
                       (default is empty string).
+  -w SECONDS         Safety-net timeout (socat's -t) for how long to keep
+                      waiting once socat's own write side is shut down
+                      (default ${DEFAULT_WAIT_TIMEOUT}s / 1 week). Rarely
+                      matters in practice -- see the comment above the
+                      socat invocation near the bottom of this script.
 EOF
 }
 
@@ -63,6 +80,15 @@ while [ $# -gt 0 ]; do
             ;;
         -p?*)
             prefix="${1#-p}"
+            shift
+            ;;
+        -w)
+            [ $# -ge 2 ] || { echo "Error: -w requires an argument" >&2; exit 2; }
+            wait_timeout="$2"
+            shift 2
+            ;;
+        -w?*)
+            wait_timeout="${1#-w}"
             shift
             ;;
         -h|--help)
@@ -154,8 +180,24 @@ abs_path="$(abspath "$filepath")"
 payload="${prefix}${abs_path}"$'\n'
 
 # --- Send the payload, then block until the server closes the
-#     connection, discarding whatever (if anything) it sends back. ----
-if ! error_output=$(printf '%s' "$payload" | socat - "TCP:${host}:${port}" 2>&1 1>/dev/null); then
+#     connection, discarding whatever (if anything) it sends back.
+#
+#     shut-none on the TCP address stops socat from ever sending a
+#     half-close (TCP FIN) once our side of the pipe reaches EOF. We
+#     don't need the server to see that FIN -- it already knows we're
+#     done as soon as it sees the newline -- but some VM/NAT network
+#     layers (e.g. Lima/Colima's userland networking, recognizable by a
+#     192.168.64.x gateway) don't propagate a half-close correctly and
+#     instead tear down the *entire* connection the moment they see
+#     that first FIN, well before the server ever gets to close its
+#     side on its own terms. Not sending it at all sidesteps that.
+#
+#     -t is kept as a secondary safety net: it bounds how long socat
+#     waits after ITS OWN write side is told to shut down (which now
+#     only happens when the real server closes the connection), in the
+#     unlikely case that shutdown itself somehow stalls. -------------
+if ! error_output=$(printf '%s' "$payload" \
+        | socat -t "$wait_timeout" - "TCP:${host}:${port},shut-none" 2>&1 1>/dev/null); then
     echo "Error communicating with Emacs server at ${host}:${port}: ${error_output}" >&2
     exit 1
 fi
