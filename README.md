@@ -11,6 +11,8 @@ emacsclient-proxy is a minimal bridge to use Emacs as your `EDITOR` from sandbox
 This repository contains:
 * **`emacsclient-proxy.el`**: A lightweight TCP server running inside your host Emacs.
 * **`emacsclient-proxy.py`**: A client Python script to be placed in untrusted environments and set as your `EDITOR` variable.
+* **`emacsclient-proxy.sh`**: A client Bash script to be placed in untrusted environments and set as your `EDITOR` variable. Uses `socat`.
+
 
 ## How it works
 
@@ -41,7 +43,7 @@ You can customize the binding address when starting:
 
 ### 2. Sandbox Setup (The `EDITOR` Variable)
 
-Install python3 if missing. Copy `emacsclient-proxy.py` into your container or sandbox context, ensure it is executable, and configure your shell to use it as the default editor, e.g. in `~/.bashrc`:
+Copy `emacsclient-proxy.py` or `emacsclient-proxy.sh` into your container or sandbox context, ensure it is executable, and configure your shell to use it as the default editor, e.g. in `~/.bashrc`:
 
 ```bash
 # Automatically detect the default routing gateway (useful in Docker/VMs)
