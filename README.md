@@ -28,16 +28,16 @@ Place `emacsclient-proxy.el` in your Emacs load path and load it in your init fi
 
 ```elisp
 (add-to-list 'load-path "/path/to/directory-containing-file")
-(require 'emacsclient-proxy)
 
-;; Start the secure server on a port of your choice (default is localhost:3649)
-(server-start)
-(emacsclient-proxy-start "localhost:3649")
+(use-package emacsclient-proxy
+  :config
+  (server-start)
+  (emacsclient-proxy-start "192.168.64.1"))
 ```
 
 You can customize the binding address when starting:
 * `"localhost:3649"`: Listen on loopback only (safest for local use).
-* `"0.0.0.0:3649"`: Listen on all interfaces (useful if connecting from a remote VM or container gateway).
+* `"0.0.0.0:3649"`: Listen on all interfaces (use with caution).
 
 ### 2. Sandbox Setup (The `EDITOR` Variable)
 
